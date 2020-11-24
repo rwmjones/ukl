@@ -543,7 +543,7 @@ void read_warmup() {
 	fd =open("/mytmpfs/test_file.txt", O_RDONLY);
 	if (fd < 0) printf("invalid fd in read: %d\n", fd);
 	
-	for (int i = 0; i < 1; i ++) {
+	for (int i = 0; i < 1000; i ++) {
 		syscall(SYS_read, fd, buf_in, file_size);
 	}
 	close(fd);
@@ -556,7 +556,7 @@ void read_warmup() {
 void write_test(struct timespec *diffTime) {
 	struct timespec startTime, endTime;
 
-	char *buf = (char *) malloc (sizeof(char) * file_size);
+	char *buf = (char *) malloc (sizeof(char) * file_size);	
 	for (int i = 0; i < file_size; i++) {
 		buf[i] = 'a';
 	}
@@ -903,7 +903,7 @@ void send_test(struct timespec *timeArray, int iter, int *i) {
 	memset(&server_addr, 0, sizeof(struct sockaddr_un));
 	server_addr.sun_family = AF_UNIX;
 	strncpy(server_addr.sun_path, home, sizeof(server_addr.sun_path) - 1); 
-	strncpy(server_addr.sun_path, sock, sizeof(server_addr.sun_path) - 1); 
+	strncat(server_addr.sun_path, sock, sizeof(server_addr.sun_path) - 1); 
 
 	int forkId = fork();
 
@@ -916,9 +916,6 @@ void send_test(struct timespec *timeArray, int iter, int *i) {
 		close(fds1[0]);
 		close(fds2[1]);
 
-		struct sockaddr_un client_addr;
-		socklen_t client_addr_len;
-	
 		int fd_server = socket(AF_UNIX, SOCK_STREAM, 0);
 		if (fd_server < 0) printf("[error] failed to open server socket.\n");
 	
@@ -930,7 +927,8 @@ void send_test(struct timespec *timeArray, int iter, int *i) {
 
 		write(fds1[1], &w, 1);
 
-		int fd_connect = accept(fd_server, (struct sockaddr *) &client_addr, &client_addr_len);
+		int fd_connect = accept(fd_server, (struct sockaddr *)0,
+					(socklen_t *)0);
 		if (DEBUG) printf("Connection accepted.\n");
 
 		read(fds2[0], &r, 1);
@@ -1003,7 +1001,8 @@ void recv_test(struct timespec *timeArray, int iter, int *i) {
 	struct sockaddr_un server_addr;
 	memset(&server_addr, 0, sizeof(struct sockaddr_un));
 	server_addr.sun_family = AF_UNIX;
-	strncpy(server_addr.sun_path, sock, sizeof(server_addr.sun_path) - 1); 
+	strncpy(server_addr.sun_path, home, sizeof(server_addr.sun_path) - 1); 
+	strncat(server_addr.sun_path, sock, sizeof(server_addr.sun_path) - 1); 
 
 	int forkId = fork();
 
@@ -1016,9 +1015,6 @@ void recv_test(struct timespec *timeArray, int iter, int *i) {
 		close(fds1[0]);
 		close(fds2[1]);
 
-		struct sockaddr_un client_addr;
-		socklen_t client_addr_len;
-	
 		int fd_server = socket(AF_UNIX, SOCK_STREAM, 0);
 		if (fd_server < 0) printf("[error] failed to open server socket.\n");
 	
@@ -1030,7 +1026,8 @@ void recv_test(struct timespec *timeArray, int iter, int *i) {
 
 		write(fds1[1], &w, 1);
 
-		int fd_connect = accept(fd_server, (struct sockaddr *) &client_addr, &client_addr_len);
+		int fd_connect = accept(fd_server, (struct sockaddr *)0,
+					(socklen_t *)0);
 		if (DEBUG) printf("Connection accepted.\n");
 
 		read(fds2[0], &r, 1);
@@ -1104,12 +1101,8 @@ void recv_test(struct timespec *timeArray, int iter, int *i) {
 
 }
 
-extern int fsbringup(void);
-
 int main(int argc, char *argv[])
 {
-	fsbringup();
-
 	home = "/root";
 	
 	output_fn = (char *)malloc(500*sizeof(char));
@@ -1161,7 +1154,7 @@ int main(int argc, char *argv[])
 	/*               GETPID                  */
 	/*****************************************/
 
-	sleep(2);
+	sleep(5);
 	info.iter = BASE_ITER * 100;
 	info.name = "ref";
 	one_line_test(fp, copy, ref_test, &info);
@@ -1174,6 +1167,8 @@ int main(int argc, char *argv[])
 	info.iter = BASE_ITER * 100;
 	info.name = "getpid";
 	one_line_test(fp, copy, getpid_test, &info);
+
+
 	
 	/*****************************************/
 	/*            CONTEXT SWITCH             */
@@ -1285,6 +1280,7 @@ int main(int argc, char *argv[])
 	info.iter = BASE_ITER * 5;
 	info.name = "small page fault";
 	one_line_test(fp, copy, page_fault_test, &info);
+
 	/****** MID ******/
 	file_size = PAGE_SIZE * 10;
 	printf("file size: %d.\n", file_size);
@@ -1309,6 +1305,7 @@ int main(int argc, char *argv[])
 	info.iter = BASE_ITER * 5;
 	info.name = "mid page fault";
 	one_line_test(fp, copy, page_fault_test, &info);
+
 	/****** BIG ******/
 	file_size = PAGE_SIZE * 1000;	
 	printf("file size: %d.\n", file_size);
@@ -1333,6 +1330,7 @@ int main(int argc, char *argv[])
 	info.iter = BASE_ITER * 5;
 	info.name = "big page fault";
 	one_line_test(fp, copy, page_fault_test, &info);
+
        /****** HUGE ******/
 	file_size = PAGE_SIZE * 10000;	
 	printf("file size: %d.\n", file_size);
@@ -1356,6 +1354,7 @@ int main(int argc, char *argv[])
 	info.iter = BASE_ITER * 5;
 	info.name = "huge page fault";
 	one_line_test(fp, copy, page_fault_test, &info);
+
 	/*****************************************/
 	/*              WRITE & READ             */
 	/*****************************************/
@@ -1374,6 +1373,7 @@ int main(int argc, char *argv[])
 	info.iter = BASE_ITER * 10;
 	info.name = "epoll";
 	one_line_test(fp, copy, epoll_test, &info);
+	
 
 	/****** BIG ******/
 	fd_count = 1000;
@@ -1389,7 +1389,7 @@ int main(int argc, char *argv[])
 	info.iter = BASE_ITER;
 	info.name = "epoll big";
 	one_line_test(fp, copy, epoll_test, &info);
-	
+
 	fclose(fp);
 	if (!isFirstIteration)
 	{
@@ -1408,6 +1408,5 @@ int main(int argc, char *argv[])
 	struct timespec *diffTime = calc_diff(&startTime, &endTime);
 	printf("Test took: %ld.%09ld seconds\n",diffTime->tv_sec, diffTime->tv_nsec); 
 	free(diffTime);
-	sync();
 	return(0);
 }

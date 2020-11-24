@@ -33,8 +33,7 @@ gettimecheck: glibc
 
 lebench: glibc
 	gcc -c -o lebench.o OS_Eval.c -mcmodel=kernel -ggdb -mno-red-zone
-	gcc -c -o fsb.o fsbringup.c -mcmodel=kernel -ggdb -mno-red-zone
-	ld -r -o lebenchfinal.o --unresolved-symbols=ignore-all --allow-multiple-definition lebench.o --start-group fsb.o glibcfinal --end-group 
+	ld -r -o lebenchfinal.o --unresolved-symbols=ignore-all --allow-multiple-definition lebench.o --start-group glibcfinal --end-group 
 	ar cr UKL.a lebenchfinal.o
 	rm -rf ../linux/vmlinux 
 	make -C ../linux -j$(shell nproc)
