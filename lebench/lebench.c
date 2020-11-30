@@ -446,31 +446,31 @@ void two_line_test(FILE *fp, FILE *copy, void (*f)(struct timespec*,struct times
 	return;
 }
 
-void forkTest(struct timespec *childTime, struct timespec *parentTime) 
-{
-    struct timespec timeA;
-    struct timespec timeC;
-    timeB = mmap(NULL, sizeof(struct timespec), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
-    int status;
-    clock_gettime(CLOCK_MONOTONIC,&timeA);
+/* void forkTest(struct timespec *childTime, struct timespec *parentTime)  */
+/* { */
+/*     struct timespec timeA; */
+/*     struct timespec timeC; */
+/*     timeB = mmap(NULL, sizeof(struct timespec), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0); */
+/*     int status; */
+/*     clock_gettime(CLOCK_MONOTONIC,&timeA); */
 
-    int forkId = fork();
-    if (forkId == 0){
-        clock_gettime(CLOCK_MONOTONIC, timeB);
-        kill(getpid(),SIGINT);
-	printf("[error] unable to kill child process\n");
-	return;
-    } else if (forkId > 0){
-        clock_gettime(CLOCK_MONOTONIC,&timeC);
-        wait(&status);
-	add_diff_to_sum(childTime,*timeB,timeA);
-	add_diff_to_sum(parentTime,timeC,timeA);
-    } else {
-    	printf("[error] fork failed.\n");
-    }
-    munmap(timeB, sizeof(struct timespec));
-    return;
-}
+/*     int forkId = fork(); */
+/*     if (forkId == 0){ */
+/*         clock_gettime(CLOCK_MONOTONIC, timeB); */
+/*         kill(getpid(),SIGINT); */
+/* 	printf("[error] unable to kill child process\n"); */
+/* 	return; */
+/*     } else if (forkId > 0){ */
+/*         clock_gettime(CLOCK_MONOTONIC,&timeC); */
+/*         wait(&status); */
+/* 	add_diff_to_sum(childTime,*timeB,timeA); */
+/* 	add_diff_to_sum(parentTime,timeC,timeA); */
+/*     } else { */
+/*     	printf("[error] fork failed.\n"); */
+/*     } */
+/*     munmap(timeB, sizeof(struct timespec)); */
+/*     return; */
+/* } */
 
 void *thrdfnc(void *args)
 {
@@ -545,7 +545,7 @@ void read_warmup() {
 	fd =open("/mytmpfs/test_file.txt", O_RDONLY);
 	if (fd < 0) printf("invalid fd in read: %d\n", fd);
 	
-	for (int i = 0; i < 1000; i ++) {
+	for (int i = 0; i < 1; i ++) {
 		syscall(SYS_read, fd, buf_in, file_size);
 	}
 	close(fd);
@@ -558,7 +558,7 @@ void read_warmup() {
 void write_test(struct timespec *diffTime) {
 	struct timespec startTime, endTime;
 
-	char *buf = (char *) malloc (sizeof(char) * file_size);	
+	char *buf = (char *) malloc (sizeof(char) * file_size);
 	for (int i = 0; i < file_size; i++) {
 		buf[i] = 'a';
 	}
@@ -798,310 +798,313 @@ void epoll_test(struct timespec *diffTime) {
 	return;
 }
 
-void context_switch_test(struct timespec *diffTime) {
-	int iter = 1000;
-	struct timespec startTime, endTime;
-	int fds1[2], fds2[2], retval;
-	retval = pipe(fds1);
-	if (retval != 0) printf("[error] failed to open pipe1.\n");
-	retval = pipe(fds2);
-	if (retval != 0) printf("[error] failed to open pipe2.\n");
+/* void context_switch_test(struct timespec *diffTime) { */
+/* 	int iter = 1000; */
+/* 	struct timespec startTime, endTime; */
+/* 	int fds1[2], fds2[2], retval; */
+/* 	retval = pipe(fds1); */
+/* 	if (retval != 0) printf("[error] failed to open pipe1.\n"); */
+/* 	retval = pipe(fds2); */
+/* 	if (retval != 0) printf("[error] failed to open pipe2.\n"); */
 	
-	char w = 'a', r;
-	cpu_set_t cpuset;
-	int prio;
+/* 	char w = 'a', r; */
+/* 	cpu_set_t cpuset; */
+/* 	int prio; */
 
-	retval = sched_getaffinity(getpid(), sizeof(cpuset), &cpuset);
-	if (retval == -1) printf("[error] failed to get affinity.\n");
-	prio = getpriority(PRIO_PROCESS, 0);
-	if (prio == -1) printf("[error] failed to get priority.\n");
+/* 	retval = sched_getaffinity(getpid(), sizeof(cpuset), &cpuset); */
+/* 	if (retval == -1) printf("[error] failed to get affinity.\n"); */
+/* 	prio = getpriority(PRIO_PROCESS, 0); */
+/* 	if (prio == -1) printf("[error] failed to get priority.\n"); */
 	
-	int forkId = fork();
-	if (forkId > 0) { // is parent
-		retval = close(fds1[0]);
-		if (retval != 0) printf("[error] failed to close fd1.\n");
-		retval = close(fds2[1]);
-		if (retval != 0) printf("[error] failed to close fd2.\n");
+/* 	int forkId = fork(); */
+/* 	if (forkId > 0) { // is parent */
+/* 		retval = close(fds1[0]); */
+/* 		if (retval != 0) printf("[error] failed to close fd1.\n"); */
+/* 		retval = close(fds2[1]); */
+/* 		if (retval != 0) printf("[error] failed to close fd2.\n"); */
 
-		cpu_set_t set;
-		CPU_ZERO(&set);
-		CPU_SET(0, &set);
-		retval = sched_setaffinity(getpid(), sizeof(set), &set);
-		if (retval == -1) printf("[error] failed to set processor affinity.\n");
-		retval = setpriority(PRIO_PROCESS, 0, -20); 
-		if (retval == -1) printf("[error] failed to set process priority.\n");
+/* 		cpu_set_t set; */
+/* 		CPU_ZERO(&set); */
+/* 		CPU_SET(0, &set); */
+/* 		retval = sched_setaffinity(getpid(), sizeof(set), &set); */
+/* 		if (retval == -1) printf("[error] failed to set processor affinity.\n"); */
+/* 		retval = setpriority(PRIO_PROCESS, 0, -20);  */
+/* 		if (retval == -1) printf("[error] failed to set process priority.\n"); */
 
-		read(fds2[0], &r, 1); 		
+/* 		read(fds2[0], &r, 1); 		 */
 
-		clock_gettime(CLOCK_MONOTONIC, &startTime);
-		for (int i = 0; i < iter; i++) {
-			write(fds1[1], &w, 1);		
-			read(fds2[0], &r, 1); 
-		}
-		clock_gettime(CLOCK_MONOTONIC, &endTime);
-		int status;
-        	wait(&status);
+/* 		clock_gettime(CLOCK_MONOTONIC, &startTime); */
+/* 		for (int i = 0; i < iter; i++) { */
+/* 			write(fds1[1], &w, 1);		 */
+/* 			read(fds2[0], &r, 1);  */
+/* 		} */
+/* 		clock_gettime(CLOCK_MONOTONIC, &endTime); */
+/* 		int status; */
+/*         	wait(&status); */
 		
-		close(fds1[1]);
-		close(fds2[0]);
+/* 		close(fds1[1]); */
+/* 		close(fds2[0]); */
 
 
-	} else if (forkId == 0){
+/* 	} else if (forkId == 0){ */
 	
-		retval = close(fds1[1]);
-		if (retval != 0) printf("[error] failed to close fd1.\n");
-		retval = close(fds2[0]);
-		if (retval != 0) printf("[error] failed to close fd2.\n");
+/* 		retval = close(fds1[1]); */
+/* 		if (retval != 0) printf("[error] failed to close fd1.\n"); */
+/* 		retval = close(fds2[0]); */
+/* 		if (retval != 0) printf("[error] failed to close fd2.\n"); */
 
-		cpu_set_t set;
-		CPU_ZERO(&set);
-		CPU_SET(0, &set);
-		retval = sched_setaffinity(getpid(), sizeof(set), &set);
-		if (retval == -1) printf("[error] failed to set processor affinity.\n");
-		retval = setpriority(PRIO_PROCESS, 0, -20); 
-		if (retval == -1) printf("[error] failed to set process priority.\n");
+/* 		cpu_set_t set; */
+/* 		CPU_ZERO(&set); */
+/* 		CPU_SET(0, &set); */
+/* 		retval = sched_setaffinity(getpid(), sizeof(set), &set); */
+/* 		if (retval == -1) printf("[error] failed to set processor affinity.\n"); */
+/* 		retval = setpriority(PRIO_PROCESS, 0, -20);  */
+/* 		if (retval == -1) printf("[error] failed to set process priority.\n"); */
 
-		write(fds2[1], &w, 1);		
-		for (int i = 0; i < iter; i++) {
-			read(fds1[0], &r, 1);		
-			write(fds2[1], &w, 1);		
-		}
+/* 		write(fds2[1], &w, 1);		 */
+/* 		for (int i = 0; i < iter; i++) { */
+/* 			read(fds1[0], &r, 1);		 */
+/* 			write(fds2[1], &w, 1);		 */
+/* 		} */
 			
-        	kill(getpid(), SIGINT);
-		printf("[error] unable to kill child process\n");
-		return;
-	} else {
-		printf("[error] failed to fork.\n");
-	}
+/*         	kill(getpid(), SIGINT); */
+/* 		printf("[error] unable to kill child process\n"); */
+/* 		return; */
+/* 	} else { */
+/* 		printf("[error] failed to fork.\n"); */
+/* 	} */
 
-	retval = sched_setaffinity(getpid(), sizeof(cpuset), &cpuset);
-	if (retval == -1) printf("[error] failed to restore affinity.\n");
-	retval = setpriority(PRIO_PROCESS, 0, prio);
-	if (retval == -1) printf("[error] failed to restore priority.\n");
+/* 	retval = sched_setaffinity(getpid(), sizeof(cpuset), &cpuset); */
+/* 	if (retval == -1) printf("[error] failed to restore affinity.\n"); */
+/* 	retval = setpriority(PRIO_PROCESS, 0, prio); */
+/* 	if (retval == -1) printf("[error] failed to restore priority.\n"); */
 
-	struct timespec sum;
-	sum.tv_sec = 0;
-	sum.tv_nsec = 0;
-	add_diff_to_sum(&sum, endTime, startTime);
-	struct timespec *diff = calc_average(&sum, iter);
-	diffTime->tv_sec = diff->tv_sec;
-	diffTime->tv_nsec = diff->tv_nsec;
-	free(diff);
-}
+/* 	struct timespec sum; */
+/* 	sum.tv_sec = 0; */
+/* 	sum.tv_nsec = 0; */
+/* 	add_diff_to_sum(&sum, endTime, startTime); */
+/* 	struct timespec *diff = calc_average(&sum, iter); */
+/* 	diffTime->tv_sec = diff->tv_sec; */
+/* 	diffTime->tv_nsec = diff->tv_nsec; */
+/* 	free(diff); */
+/* } */
 
 int msg_size = -1;
 int curr_iter_limit = -1;
 #define sock "/TEST_DIR/socket"
-void send_test(struct timespec *timeArray, int iter, int *i) {
-	int retval;
-	int fds1[2], fds2[2];
-	retval = pipe(fds1);
-	if (retval != 0) printf("[error] failed to open pipe1.\n");
-	retval = pipe(fds2);
-	if (retval != 0) printf("[error] failed to open pipe1.\n");
-	char w = 'b', r;	
+/* void send_test(struct timespec *timeArray, int iter, int *i) { */
+/* 	int retval; */
+/* 	int fds1[2], fds2[2]; */
+/* 	retval = pipe(fds1); */
+/* 	if (retval != 0) printf("[error] failed to open pipe1.\n"); */
+/* 	retval = pipe(fds2); */
+/* 	if (retval != 0) printf("[error] failed to open pipe1.\n"); */
+/* 	char w = 'b', r;	 */
 	
-	struct sockaddr_un server_addr;
-	memset(&server_addr, 0, sizeof(struct sockaddr_un));
-	server_addr.sun_family = AF_UNIX;
-	strncpy(server_addr.sun_path, home, sizeof(server_addr.sun_path) - 1); 
-	strncat(server_addr.sun_path, sock, sizeof(server_addr.sun_path) - 1); 
+/* 	struct sockaddr_un server_addr; */
+/* 	memset(&server_addr, 0, sizeof(struct sockaddr_un)); */
+/* 	server_addr.sun_family = AF_UNIX; */
+/* 	strncpy(server_addr.sun_path, home, sizeof(server_addr.sun_path) - 1);  */
+/* 	strncpy(server_addr.sun_path, sock, sizeof(server_addr.sun_path) - 1);  */
 
-	int forkId = fork();
+/* 	int forkId = fork(); */
 
-	if (forkId < 0) {
-		printf("[error] fork failed.\n");
-		return;
-	}
+/* 	if (forkId < 0) { */
+/* 		printf("[error] fork failed.\n"); */
+/* 		return; */
+/* 	} */
 
-	if (forkId == 0) {
-		close(fds1[0]);
-		close(fds2[1]);
+/* 	if (forkId == 0) { */
+/* 		close(fds1[0]); */
+/* 		close(fds2[1]); */
 
-		int fd_server = socket(AF_UNIX, SOCK_STREAM, 0);
-		if (fd_server < 0) printf("[error] failed to open server socket.\n");
+/* 		struct sockaddr_un client_addr; */
+/* 		socklen_t client_addr_len; */
 	
-		retval = bind(fd_server, (struct sockaddr *) &server_addr, sizeof(struct sockaddr_un));
-		if (retval == -1) printf("[error] failed to bind.\n");
-		retval = listen(fd_server, 10); 
-		if (retval == -1) printf("[error] failed to listen.\n");
-		if (DEBUG) printf("Waiting for connection\n");
+/* 		int fd_server = socket(AF_UNIX, SOCK_STREAM, 0); */
+/* 		if (fd_server < 0) printf("[error] failed to open server socket.\n"); */
+	
+/* 		retval = bind(fd_server, (struct sockaddr *) &server_addr, sizeof(struct sockaddr_un)); */
+/* 		if (retval == -1) printf("[error] failed to bind.\n"); */
+/* 		retval = listen(fd_server, 10);  */
+/* 		if (retval == -1) printf("[error] failed to listen.\n"); */
+/* 		if (DEBUG) printf("Waiting for connection\n"); */
 
-		write(fds1[1], &w, 1);
+/* 		write(fds1[1], &w, 1); */
 
-		int fd_connect = accept(fd_server, (struct sockaddr *)0,
-					(socklen_t *)0);
-		if (DEBUG) printf("Connection accepted.\n");
+/* 		int fd_connect = accept(fd_server, (struct sockaddr *) &client_addr, &client_addr_len); */
+/* 		if (DEBUG) printf("Connection accepted.\n"); */
 
-		read(fds2[0], &r, 1);
+/* 		read(fds2[0], &r, 1); */
 
-		remove(sock);
-		close(fd_server);
-		close(fd_connect);
-		close(fds1[1]);
-		close(fds2[0]);
+/* 		remove(sock); */
+/* 		close(fd_server); */
+/* 		close(fd_connect); */
+/* 		close(fds1[1]); */
+/* 		close(fds2[0]); */
 
 
-        	kill(getpid(),SIGINT);
-		printf("[error] unable to kill child process\n");
-		return;
+/*         	kill(getpid(),SIGINT); */
+/* 		printf("[error] unable to kill child process\n"); */
+/* 		return; */
 
-	} else {
-		struct timespec startTime, endTime;
-		close(fds1[1]);
-		close(fds2[0]);
+/* 	} else { */
+/* 		struct timespec startTime, endTime; */
+/* 		close(fds1[1]); */
+/* 		close(fds2[0]); */
 
-		read(fds1[0], &r, 1);
+/* 		read(fds1[0], &r, 1); */
 
-		int fd_client = socket(AF_UNIX, SOCK_STREAM, 0);
-		if (fd_client < 0) printf("[error] failed to open client socket.\n");
-		retval = connect(fd_client, (struct sockaddr *) &server_addr, sizeof(struct sockaddr_un));
-		if (retval == -1) printf("[error] failed to connect.\n");
+/* 		int fd_client = socket(AF_UNIX, SOCK_STREAM, 0); */
+/* 		if (fd_client < 0) printf("[error] failed to open client socket.\n"); */
+/* 		retval = connect(fd_client, (struct sockaddr *) &server_addr, sizeof(struct sockaddr_un)); */
+/* 		if (retval == -1) printf("[error] failed to connect.\n"); */
 
-		char *buf = (char *) malloc (sizeof(char) * msg_size);
-		for (int i = 0; i < msg_size; i++) {
-			buf[i] = 'a';
-		}
+/* 		char *buf = (char *) malloc (sizeof(char) * msg_size); */
+/* 		for (int i = 0; i < msg_size; i++) { */
+/* 			buf[i] = 'a'; */
+/* 		} */
 		
-		retval = send(fd_client, buf, msg_size, MSG_DONTWAIT);
-		for (int j = 0; *i < iter & j < curr_iter_limit; (*i) ++, j++) {	
+/* 		retval = send(fd_client, buf, msg_size, MSG_DONTWAIT); */
+/* 		for (int j = 0; *i < iter & j < curr_iter_limit; (*i) ++, j++) {	 */
 			
-			clock_gettime(CLOCK_MONOTONIC,&startTime);
-			retval = syscall(SYS_sendto, fd_client, buf, msg_size, MSG_DONTWAIT, NULL, 0);
-			clock_gettime(CLOCK_MONOTONIC,&endTime);
-			add_diff_to_sum(&timeArray[*i], endTime, startTime);
+/* 			clock_gettime(CLOCK_MONOTONIC,&startTime); */
+/* 			retval = syscall(SYS_sendto, fd_client, buf, msg_size, MSG_DONTWAIT, NULL, 0); */
+/* 			clock_gettime(CLOCK_MONOTONIC,&endTime); */
+/* 			add_diff_to_sum(&timeArray[*i], endTime, startTime); */
 
-			if (retval == -1) {
-				printf("[error] failed to send.\n");
-			}
-		}
+/* 			if (retval == -1) { */
+/* 				printf("[error] failed to send.\n"); */
+/* 			} */
+/* 		} */
 
-		write(fds2[1], &w, 1);
-		close(fd_client);	
-		close(fds1[0]);	
-		close(fds2[1]);	
-		free(buf);
-		int status;
-        	wait(&status);
-	}
+/* 		write(fds2[1], &w, 1); */
+/* 		close(fd_client);	 */
+/* 		close(fds1[0]);	 */
+/* 		close(fds2[1]);	 */
+/* 		free(buf); */
+/* 		int status; */
+/*         	wait(&status); */
+/* 	} */
 
-}
+/* } */
 
-void recv_test(struct timespec *timeArray, int iter, int *i) {
-	int retval;
-	int fds1[2], fds2[2];
-	retval = pipe(fds1);
-	if (retval != 0) {
-		printf("[error] failed to open pipe1.\n");
-	}
-	retval = pipe(fds2);
-	if (retval != 0) {
-		printf("[error] failed to open pipe2.\n");
-	}
-	char w = 'b', r;	
+/* void recv_test(struct timespec *timeArray, int iter, int *i) { */
+/* 	int retval; */
+/* 	int fds1[2], fds2[2]; */
+/* 	retval = pipe(fds1); */
+/* 	if (retval != 0) { */
+/* 		printf("[error] failed to open pipe1.\n"); */
+/* 	} */
+/* 	retval = pipe(fds2); */
+/* 	if (retval != 0) { */
+/* 		printf("[error] failed to open pipe2.\n"); */
+/* 	} */
+/* 	char w = 'b', r;	 */
 	
-	struct sockaddr_un server_addr;
-	memset(&server_addr, 0, sizeof(struct sockaddr_un));
-	server_addr.sun_family = AF_UNIX;
-	strncpy(server_addr.sun_path, home, sizeof(server_addr.sun_path) - 1); 
-	strncat(server_addr.sun_path, sock, sizeof(server_addr.sun_path) - 1); 
+/* 	struct sockaddr_un server_addr; */
+/* 	memset(&server_addr, 0, sizeof(struct sockaddr_un)); */
+/* 	server_addr.sun_family = AF_UNIX; */
+/* 	strncpy(server_addr.sun_path, sock, sizeof(server_addr.sun_path) - 1);  */
 
-	int forkId = fork();
+/* 	int forkId = fork(); */
 
-	if (forkId < 0) {
-		printf("[error] fork failed.\n");
-		return;
-	}
+/* 	if (forkId < 0) { */
+/* 		printf("[error] fork failed.\n"); */
+/* 		return; */
+/* 	} */
 
-	if (forkId > 0) {
-		close(fds1[0]);
-		close(fds2[1]);
+/* 	if (forkId > 0) { */
+/* 		close(fds1[0]); */
+/* 		close(fds2[1]); */
 
-		int fd_server = socket(AF_UNIX, SOCK_STREAM, 0);
-		if (fd_server < 0) printf("[error] failed to open server socket.\n");
+/* 		struct sockaddr_un client_addr; */
+/* 		socklen_t client_addr_len; */
 	
-		retval = bind(fd_server, (struct sockaddr *) &server_addr, sizeof(struct sockaddr_un));
-		if (retval == -1) printf("[error] failed to bind.\n");
-		retval = listen(fd_server, 10);
-		if (retval == -1) printf("[error] failed to listen.\n");
-		if (DEBUG) printf("Waiting for connection\n");
+/* 		int fd_server = socket(AF_UNIX, SOCK_STREAM, 0); */
+/* 		if (fd_server < 0) printf("[error] failed to open server socket.\n"); */
+	
+/* 		retval = bind(fd_server, (struct sockaddr *) &server_addr, sizeof(struct sockaddr_un)); */
+/* 		if (retval == -1) printf("[error] failed to bind.\n"); */
+/* 		retval = listen(fd_server, 10); */
+/* 		if (retval == -1) printf("[error] failed to listen.\n"); */
+/* 		if (DEBUG) printf("Waiting for connection\n"); */
 
-		write(fds1[1], &w, 1);
+/* 		write(fds1[1], &w, 1); */
 
-		int fd_connect = accept(fd_server, (struct sockaddr *)0,
-					(socklen_t *)0);
-		if (DEBUG) printf("Connection accepted.\n");
+/* 		int fd_connect = accept(fd_server, (struct sockaddr *) &client_addr, &client_addr_len); */
+/* 		if (DEBUG) printf("Connection accepted.\n"); */
 
-		read(fds2[0], &r, 1);
+/* 		read(fds2[0], &r, 1); */
 
 
-		char *buf = (char *) malloc (sizeof(char) * msg_size);
+/* 		char *buf = (char *) malloc (sizeof(char) * msg_size); */
 		
-		struct timespec startTime, endTime;
-		retval = recv(fd_connect, buf, msg_size, MSG_DONTWAIT);
-		for (int j = 0; *i < iter & j < curr_iter_limit; (*i) ++, j++) {	
+/* 		struct timespec startTime, endTime; */
+/* 		retval = recv(fd_connect, buf, msg_size, MSG_DONTWAIT); */
+/* 		for (int j = 0; *i < iter & j < curr_iter_limit; (*i) ++, j++) {	 */
 			
-			clock_gettime(CLOCK_MONOTONIC,&startTime);
-			retval = syscall(SYS_recvfrom, fd_connect, buf, msg_size, MSG_DONTWAIT, NULL, NULL);
-			clock_gettime(CLOCK_MONOTONIC,&endTime);
+/* 			clock_gettime(CLOCK_MONOTONIC,&startTime); */
+/* 			retval = syscall(SYS_recvfrom, fd_connect, buf, msg_size, MSG_DONTWAIT, NULL, NULL); */
+/* 			clock_gettime(CLOCK_MONOTONIC,&endTime); */
 
-			add_diff_to_sum(&timeArray[*i], endTime, startTime);
+/* 			add_diff_to_sum(&timeArray[*i], endTime, startTime); */
 
-			if (retval == -1) {
-				printf("[error] failed to recv.\n");
-			}
-		}
+/* 			if (retval == -1) { */
+/* 				printf("[error] failed to recv.\n"); */
+/* 			} */
+/* 		} */
 
-		write(fds1[1], &w, 1);
+/* 		write(fds1[1], &w, 1); */
 
-		remove(sock);
-		close(fd_server);
-		close(fd_connect);
-		close(fds1[1]);
-		close(fds2[0]);
-		free(buf);
-		int status;
-        	wait(&status);
+/* 		remove(sock); */
+/* 		close(fd_server); */
+/* 		close(fd_connect); */
+/* 		close(fds1[1]); */
+/* 		close(fds2[0]); */
+/* 		free(buf); */
+/* 		int status; */
+/*         	wait(&status); */
 
-	} else {
-		close(fds1[1]);
-		close(fds2[0]);
+/* 	} else { */
+/* 		close(fds1[1]); */
+/* 		close(fds2[0]); */
 
-		read(fds1[0], &r, 1);
+/* 		read(fds1[0], &r, 1); */
 
-		int fd_client = socket(AF_UNIX, SOCK_STREAM, 0);
-		if (fd_client < 0) printf("[error] failed to open client socket.\n");
-		retval = connect(fd_client, (struct sockaddr *) &server_addr, sizeof(struct sockaddr_un));
-		if (retval == -1) printf("[error] failed to connect.\n");
+/* 		int fd_client = socket(AF_UNIX, SOCK_STREAM, 0); */
+/* 		if (fd_client < 0) printf("[error] failed to open client socket.\n"); */
+/* 		retval = connect(fd_client, (struct sockaddr *) &server_addr, sizeof(struct sockaddr_un)); */
+/* 		if (retval == -1) printf("[error] failed to connect.\n"); */
 
-		char *buf = (char *) malloc (sizeof(char) * msg_size);
-		for (int i = 0; i < msg_size; i++) {
-			buf[i] = 'a';
-		}
+/* 		char *buf = (char *) malloc (sizeof(char) * msg_size); */
+/* 		for (int i = 0; i < msg_size; i++) { */
+/* 			buf[i] = 'a'; */
+/* 		} */
 		
-		for (int j = 0; j < curr_iter_limit + 1; (*i) ++, j++) {	
+/* 		for (int j = 0; j < curr_iter_limit + 1; (*i) ++, j++) {	 */
 			
-			retval = syscall(SYS_sendto, fd_client, buf, msg_size, MSG_DONTWAIT, NULL, 0);
+/* 			retval = syscall(SYS_sendto, fd_client, buf, msg_size, MSG_DONTWAIT, NULL, 0); */
 
-			if (retval == -1) {
-				printf("[error] failed to send.\n");
-			}
-		}
+/* 			if (retval == -1) { */
+/* 				printf("[error] failed to send.\n"); */
+/* 			} */
+/* 		} */
 
-		write(fds2[1], &w, 1);
-		read(fds1[0], &r, 1);
-		close(fd_client);	
-		close(fds1[0]);	
-		close(fds2[1]);	
-		free(buf);
+/* 		write(fds2[1], &w, 1); */
+/* 		read(fds1[0], &r, 1); */
+/* 		close(fd_client);	 */
+/* 		close(fds1[0]);	 */
+/* 		close(fds2[1]);	 */
+/* 		free(buf); */
 
-        	kill(getpid(),SIGINT);
-		printf("[error] unable to kill child process\n");
-		return;
+/*         	kill(getpid(),SIGINT); */
+/* 		printf("[error] unable to kill child process\n"); */
+/* 		return; */
 
-	}
+/* 	} */
 
-}
+/* } */
 
 int main(int argc, char *argv[])
 {
@@ -1160,7 +1163,7 @@ int main(int argc, char *argv[])
 	/*               GETPID                  */
 	/*****************************************/
 
-	sleep(5);
+	sleep(2);
 	info.iter = BASE_ITER * 100;
 	info.name = "ref";
 	one_line_test(fp, copy, ref_test, &info);
@@ -1173,8 +1176,6 @@ int main(int argc, char *argv[])
 	info.iter = BASE_ITER * 100;
 	info.name = "getpid";
 	one_line_test(fp, copy, getpid_test, &info);
-
-
 	
 	/*****************************************/
 	/*            CONTEXT SWITCH             */
@@ -1286,7 +1287,6 @@ int main(int argc, char *argv[])
 	info.iter = BASE_ITER * 5;
 	info.name = "small page fault";
 	one_line_test(fp, copy, page_fault_test, &info);
-
 	/****** MID ******/
 	file_size = PAGE_SIZE * 10;
 	printf("file size: %d.\n", file_size);
@@ -1311,7 +1311,6 @@ int main(int argc, char *argv[])
 	info.iter = BASE_ITER * 5;
 	info.name = "mid page fault";
 	one_line_test(fp, copy, page_fault_test, &info);
-
 	/****** BIG ******/
 	/* file_size = PAGE_SIZE * 1000;	 */
 	/* printf("file size: %d.\n", file_size); */
@@ -1377,7 +1376,6 @@ int main(int argc, char *argv[])
 	info.iter = BASE_ITER * 10;
 	info.name = "epoll";
 	one_line_test(fp, copy, epoll_test, &info);
-	
 
 	/****** BIG ******/
 	fd_count = 1000;

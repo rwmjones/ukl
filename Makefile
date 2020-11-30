@@ -31,12 +31,27 @@ gettimecheck: glibc
 	rm -rf ../linux/vmlinux 
 	make -C ../linux -j$(shell nproc)
 
-lebench: glibc
-	gcc -c -o lebench.o OS_Eval.c -mcmodel=kernel -ggdb -mno-red-zone
-	ld -r -o lebenchfinal.o --unresolved-symbols=ignore-all --allow-multiple-definition lebench.o --start-group glibcfinal --end-group 
-	ar cr UKL.a lebenchfinal.o
-	rm -rf ../linux/vmlinux 
-	make -C ../linux -j$(shell nproc)
+# lebench: glibc
+# 	gcc -c -o lebench.o OS_Eval.c -mcmodel=kernel -ggdb -mno-red-zone
+# 	gcc -c -o fsb.o fsbringup.c -mcmodel=kernel -ggdb -mno-red-zone
+# 	ld -r -o lebenchfinal.o --unresolved-symbols=ignore-all --allow-multiple-definition lebench.o --start-group fsb.o glibcfinal --end-group 
+# 	ar cr UKL.a lebenchfinal.o
+# 	rm -rf ../linux/vmlinux 
+# 	make -C ../linux -j$(shell nproc)
+
+lebench: lebench
+# Remove all old state
+	make -C lebench clean
+
+# Build lebench app lib
+	make -C lebench
+
+# Linux link script expects to find UKL.a here.
+# cp lebench/lebench_partial.o ./UKL.a
+	cp lebench/UKL.a ./UKL.a
+
+# Force rebuild of vmlinux, pulls in UKL.a in link script
+	rm -rf ../linux/vmlinux && make -C ../linux -j$(shell nproc)
 
 malloctest: glibc
 	gcc -c -o malloctest.o malloctest.c -mcmodel=kernel -ggdb -mno-red-zone
@@ -111,7 +126,7 @@ uklfutex: glibc
 	rm -rf *.ko *.mod.* .H* .tm* .*cmd Module.symvers modules.order built-in.a 
 	rm -rf ../linux/vmlinux 
 	make -C ../linux -j$(shell nproc)
-	
+
 memcached: glibc
 	rm -f UKLmemcached
 	rm -f UKLlibevent
