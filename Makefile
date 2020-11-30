@@ -1,5 +1,5 @@
 
-.PHONY: glibc cj utb4 barriercheck client
+.PHONY: glibc cj utb4 barriercheck client lebench
 
 glibc:
 	./extractglibc.sh
