@@ -1,5 +1,5 @@
 
-.PHONY: glibc cj utb4 barriercheck client lebench
+.PHONY: glibc cj utb4 barriercheck client lebench getppid
 
 glibc:
 	./extractglibc.sh
@@ -31,14 +31,6 @@ gettimecheck: glibc
 	rm -rf ../linux/vmlinux 
 	make -C ../linux -j$(shell nproc)
 
-# lebench: glibc
-# 	gcc -c -o lebench.o OS_Eval.c -mcmodel=kernel -ggdb -mno-red-zone
-# 	gcc -c -o fsb.o fsbringup.c -mcmodel=kernel -ggdb -mno-red-zone
-# 	ld -r -o lebenchfinal.o --unresolved-symbols=ignore-all --allow-multiple-definition lebench.o --start-group fsb.o glibcfinal --end-group 
-# 	ar cr UKL.a lebenchfinal.o
-# 	rm -rf ../linux/vmlinux 
-# 	make -C ../linux -j$(shell nproc)
-
 lebench: lebench
 # Remove all old state
 	make -C lebench clean
@@ -49,6 +41,19 @@ lebench: lebench
 # Linux link script expects to find UKL.a here.
 # cp lebench/lebench_partial.o ./UKL.a
 	cp lebench/UKL.a ./UKL.a
+
+# Force rebuild of vmlinux, pulls in UKL.a in link script
+	rm -rf ../linux/vmlinux && make -C ../linux -j$(shell nproc)
+
+getppid: getppid
+# Remove all old state
+	make -C $@ clean
+# Build lebench app lib
+	make -C $@
+
+# Linux link script expects to find UKL.a here.
+# cp lebench/lebench_partial.o ./UKL.a
+	cp $@/UKL.a ./UKL.a
 
 # Force rebuild of vmlinux, pulls in UKL.a in link script
 	rm -rf ../linux/vmlinux && make -C ../linux -j$(shell nproc)
