@@ -15,6 +15,12 @@ CRT_ENDS=$(GCC_LIB)crtend.o $(CRT_LIB)crtn.o
 SYS_LIBS=$(GCC_LIB)libgcc.a $(GCC_LIB)libgcc_eh.a
 
 LEBench_UKL_FLAGS=-ggdb -mno-red-zone -mcmodel=kernel
+Redis_UKL_FLAGS=-ggdb -mno-red-zone -mcmodel=kernel
+
+REDIS_DIR=redis-6.2.1/src/
+REDIS_SERVER_OBJ=adlist.o quicklist.o ae.o anet.o dict.o server.o sds.o zmalloc.o lzf_c.o lzf_d.o pqsort.o zipmap.o sha1.o ziplist.o release.o networking.o util.o object.o db.o replication.o rdb.o t_string.o t_list.o t_set.o t_zset.o t_hash.o config.o aof.o pubsub.o multi.o debug.o sort.o intset.o syncio.o cluster.o crc16.o endianconv.o slowlog.o scripting.o bio.o rio.o rand.o memtest.o crcspeed.o crc64.o bitops.o sentinel.o notify.o setproctitle.o blocked.o hyperloglog.o latency.o sparkline.o redis-check-rdb.o redis-check-aof.o geo.o lazyfree.o module.o evict.o expire.o geohash.o geohash_helper.o childinfo.o defrag.o siphash.o rax.o t_stream.o listpack.o localtime.o lolwut.o lolwut5.o lolwut6.o acl.o gopher.o tracking.o connection.o tls.o sha256.o timeout.o setcpuaffinity.o monotonic.o mt19937-64.o
+REDIS_S_OBJ_TARGETS = $(addprefix $(REDIS_DIR),$(REDIS_SERVER_OBJ))
+REDIS_DEP_DIR=redis-6.2.1/deps/
 
 all: cloneRepos
 	make lebench
@@ -42,6 +48,30 @@ lebench: undefined_sys_hack.o gcc-build glibc-build
 	objcopy --prefix-symbols=ukl_ UKL.a
 	objcopy --redefine-syms=redef_sym_names UKL.a
 	make linux-build
+
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+
+#Redis: run `make redis-server` to get everything (if necessary) and build UKL
+redis-server: undefined_sys_hack.o gcc-build glibc-build
+	rm -rf UKL.a
+	if [ ! -d $(REDIS_DIR) ]; then make redis-prep; fi
+	make redis-build
+	ld -r -o redis_server.ukl --allow-multiple-definition $(CRT_STARTS) $(REDIS_S_OBJ_TARGETS) $(REDIS_DEP_DIR)hiredis/libhiredis.a $(REDIS_DEP_DIR)lua/src/liblua.a \
+                --start-group --whole-archive $(MATH_LIB) $(PTHREAD_LIB) $(RT_LIB) \
+		$(C_LIB) --no-whole-archive $(SYS_LIBS) --end-group $(CRT_ENDS)
+	ar cr UKL.a redis_server.ukl undefined_sys_hack.o
+	objcopy --prefix-symbols=ukl_ UKL.a
+	objcopy --redefine-syms=redef_sym_names UKL.a
+	make linux-build
+
+redis-build:
+	cd redis-6.2.1 && make USE_JEMALLOC=no "CFLAGS=-no-pie -fno-pic -mno-red-zone -mcmodel=kernel"
+
+redis-prep:
+	wget https://download.redis.io/releases/redis-6.2.1.tar.gz
+	tar xzf redis-6.2.1.tar.gz
+	rm -rf redis-6.2.1.tar.gz
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
