@@ -1,0 +1,3 @@
+tar rem :1234
+symbol-file linux/vmlinux
+c

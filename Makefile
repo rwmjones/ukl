@@ -46,6 +46,21 @@ lebench: undefined_sys_hack.o gcc-build glibc-build
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 
+
+#echo server 
+server: undefined_sys_hack.o gcc-build glibc-build
+	rm -rf UKL.a
+	gcc -c -o server.o server.c $(LEBench_UKL_FLAGS)
+	ld -r -o server.ukl --allow-multiple-definition $(CRT_STARTS) server.o \
+                --start-group --whole-archive  $(PTHREAD_LIB) \
+		$(C_LIB) --no-whole-archive $(SYS_LIBS) --end-group $(CRT_ENDS)
+	ar cr UKL.a server.ukl undefined_sys_hack.o
+	objcopy --prefix-symbols=ukl_ UKL.a
+	objcopy --redefine-syms=redef_sym_names UKL.a
+	make linux-build
+
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
 #LINUX
 linux-dir:
 	git clone git@github.com:unikernelLinux/Linux-Configs.git
