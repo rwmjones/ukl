@@ -8,53 +8,19 @@
 #include<arpa/inet.h>	//inet_addr
 #include<unistd.h>	//write
 
-int use_shortcut = 0;
-
-typedef int (*my_ksys_write_t)(unsigned int fd, const char *buf, size_t count);
-/* typedef void (*my_schedule_t)(void); */
-/* typedef int (*my_tcp_sendmsg_t)(void *soc, void *msghdr, size_t count); */
-
-typedef int (*shortcut_tcp_sendmsg_t)(int fd, struct iovec * iov);
-
-// TODO: make this.
-char msg_struct[96];
-// TODO: make this.
-char kiocb_struct[48];
-
-struct iovec iov;
-
-extern ssize_t ksys_write(unsigned int fd, const char  *buf, size_t count);
-/* extern int tcp_sendmsg(struct sock *sk, struct msghdr *msg, size_t size); */
 
 extern int shortcut_tcp_sendmsg(int fd, struct iovec *iov);
 
-extern void *tu_get_sock_ptr(int fd, struct iovec * iov);
-
 void do_write(int conn, char* data, int data_len){
-  /* my_tcp_sendmsg_t my_tcp_sendmsg = (my_tcp_sendmsg_t) 0xffffffff81ab4e20; */
-  /* my_ksys_write_t my_ksys_write = (my_ksys_write_t) 0xffffffff8133e990; */
   //Send the message back to client
+  // The old path
   /* write(client_sock , client_message , strlen(client_message)); */
+
+  struct iovec iov;
   iov.iov_base = (void *)data;
   iov.iov_len  = data_len;
-  char msg_struct_c[96];
 
-
-
-  /* tu_get_sock_ptr(conn); */
-
-  if(use_shortcut){
-    memcpy(msg_struct_c, msg_struct, 96);
-    /* memcpy(kiocb_struct_c, kiocb_struct, 48); */
-    /* iov_c = iov; */
-    /* tcp_sendmsg( (struct sock *) tu_get_sock_ptr(conn), (struct msghdr *)msg_struct_c, data_len); */
-    shortcut_tcp_sendmsg(conn, &iov);
-  }else{
-    ksys_write(conn , data , data_len);
-    /* write(conn , data , data_len); */
-    use_shortcut = 1;
-  }
-  /* my_schedule(); */
+  shortcut_tcp_sendmsg(conn, &iov);
 }
 
 int main(int argc , char *argv[])
@@ -107,8 +73,7 @@ int main(int argc , char *argv[])
 	//Receive a message from client
 	while( (read_size = recv(client_sock , client_message , 2000 , 0)) > 0 )
 	{
-    do_write(client_sock , client_message , strlen(client_message));
-    /* write(client_sock , client_message , strlen(client_message)); */
+    do_write(client_sock , client_message , read_size);
 	}
 
 	if(read_size == 0)
