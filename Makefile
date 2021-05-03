@@ -66,7 +66,7 @@ redis-server: undefined_sys_hack.o gcc-build glibc-build
 	make linux-build
 
 redis-build:
-	cd redis-6.2.1 && make USE_JEMALLOC=no "CFLAGS=-no-pie -fno-pic -mno-red-zone -mcmodel=kernel"
+	cd redis-6.2.1 && make redis-server USE_JEMALLOC=no "CFLAGS=-no-pie -fno-pic -mno-red-zone -mcmodel=kernel"
 
 redis-prep:
 	wget https://download.redis.io/releases/redis-6.2.1.tar.gz
