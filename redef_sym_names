@@ -20,6 +20,9 @@ ukl___dlsym __dlsym
 ukl___dlvsym __dlvsym
 ukl_k_t_arr k_t_arr
 ukl_shortcut_tcp_sendmsg shortcut_tcp_sendmsg
+ukl_shortcut_tcp_sendmsg_cached shortcut_tcp_sendmsg_cached
 ukl_ksys_write ksys_write
 ukl_printk printk
 ukl_shortcut_tcp_recvmsg shortcut_tcp_recvmsg
+ukl_shortcut_tcp_recvmsg_cached shortcut_tcp_recvmsg_cached
+ukl_shortcut_purge_cache_entry shortcut_purge_cache_entry
