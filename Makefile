@@ -1,4 +1,4 @@
-.PHONY: lebench 
+.PHONY: lebench mybench_small
 
 PARALLEL= -j$(shell nproc)
 
@@ -14,16 +14,16 @@ CRT_STARTS=$(CRT_LIB)crt1.o $(CRT_LIB)crti.o $(GCC_LIB)crtbeginT.o
 CRT_ENDS=$(GCC_LIB)crtend.o $(CRT_LIB)crtn.o
 SYS_LIBS=$(GCC_LIB)libgcc.a $(GCC_LIB)libgcc_eh.a
 
-LEBench_UKL_FLAGS=-ggdb -mno-red-zone -mcmodel=kernel
+UKL_FLAGS=-ggdb -mno-red-zone -mcmodel=kernel
 
 all: cloneRepos
 	make lebench
 
 cloneRepos:
-	make linux-dir
 	make gcc-dir
 	make glibc-dir
 	make min-initrd-dir
+	make linux-dir
 
 undefined_sys_hack.o: undefined_sys_hack.c
 	gcc -c -o $@ $< -mcmodel=kernel -ggdb -mno-red-zone
@@ -31,10 +31,27 @@ undefined_sys_hack.o: undefined_sys_hack.c
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 
+#MYBENCH_SMALL
+mybench_small: undefined_sys_hack.o gcc-build glibc-build
+	- rm -rf UKL.a mybench_small.o 
+	gcc -c -o mybench_small.o mybench_small.c $(UKL_FLAGS) -UUSE_VMALLOC -UBYPASS -UUSE_MALLOC \
+                -DREF_TEST -DWRITE_TEST -DREAD_TEST -DMMAP_TEST -DMUNMAP_TEST -DPF_TEST -DEPOLL_TEST \
+                -USELECT_TEST -UPOLL_TEST
+	ld -r -o mybench_small.ukl --allow-multiple-definition $(CRT_STARTS) mybench_small.o \
+                --start-group --whole-archive  $(PTHREAD_LIB) \
+                $(C_LIB) --no-whole-archive $(SYS_LIBS) --end-group $(CRT_ENDS)
+	ar cr UKL.a mybench_small.ukl undefined_sys_hack.o
+	objcopy --prefix-symbols=ukl_ UKL.a
+	objcopy --redefine-syms=redef_sym_names UKL.a
+	- rm -rf linux/vmlinux
+
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+
 #LEBench
 lebench: undefined_sys_hack.o gcc-build glibc-build
 	rm -rf UKL.a
-	gcc -c -o OS_Eval.o OS_Eval.c $(LEBench_UKL_FLAGS)
+	gcc -c -o OS_Eval.o OS_Eval.c $(UKL_FLAGS)
 	ld -r -o lebench.ukl --allow-multiple-definition $(CRT_STARTS) OS_Eval.o \
                 --start-group --whole-archive  $(PTHREAD_LIB) \
 		$(C_LIB) --no-whole-archive $(SYS_LIBS) --end-group $(CRT_ENDS)
@@ -49,13 +66,20 @@ lebench: undefined_sys_hack.o gcc-build glibc-build
 #LINUX
 linux-dir:
 	git clone git@github.com:unikernelLinux/Linux-Configs.git
-	git clone --depth 1 --branch ukl git@github.com:unikernelLinux/linux.git
+	git clone git@github.com:torvalds/linux.git
 	cp Linux-Configs/ukl/golden_config-5.7-broadcom linux/.config
-	make -C linux oldconfig
+	#make -C linux listnewconfig
+
+
+linux-clean:
+	make distclean -C linux/
+	cp saveconfig linux/.config
+	make -C linux menuconfig
+	cat linux/.config
 
 linux-build:
 	- rm -rf linux/vmlinux
-	make -C linux $(PARALLEL)
+	make -C linux $(PARALLEL) |& tee out
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
@@ -63,7 +87,6 @@ linux-build:
 #MIN_INITRD
 min-initrd-dir:
 	git clone git@github.com:unikernelLinux/min-initrd.git
-	make all -C min-initrd
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
