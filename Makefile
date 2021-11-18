@@ -14,7 +14,8 @@ CRT_STARTS=$(CRT_LIB)crt1.o $(CRT_LIB)crti.o $(GCC_LIB)crtbeginT.o
 CRT_ENDS=$(GCC_LIB)crtend.o $(CRT_LIB)crtn.o
 SYS_LIBS=$(GCC_LIB)libgcc.a $(GCC_LIB)libgcc_eh.a
 
-LEBench_UKL_FLAGS=-ggdb -mno-red-zone -mcmodel=kernel
+#Add -fno-pic flag for Ubuntu
+LEBench_UKL_FLAGS=-ggdb -mno-red-zone -mcmodel=kernel -fno-pic
 
 all: cloneRepos
 	make lebench
@@ -26,7 +27,7 @@ cloneRepos:
 	make min-initrd-dir
 
 undefined_sys_hack.o: undefined_sys_hack.c
-	gcc -c -o $@ $< -mcmodel=kernel -ggdb -mno-red-zone
+	gcc -c -o $@ $< -mcmodel=kernel -ggdb -mno-red-zone -fno-pic
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
@@ -46,10 +47,10 @@ lebench: undefined_sys_hack.o gcc-build glibc-build
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 
-#LINUX
+#LINUX - Clone UKL 5.14 Branch
 linux-dir:
 	git clone git@github.com:unikernelLinux/Linux-Configs.git
-	git clone --depth 1 --branch ukl git@github.com:unikernelLinux/linux.git
+	git clone --depth 1 --branch ukl-5.14 git@github.com:unikernelLinux/linux.git
 	cp Linux-Configs/ukl/golden_config-5.7-broadcom linux/.config
 	make -C linux oldconfig
 
@@ -61,8 +62,9 @@ linux-build:
 #-----------------------------------------------------------------------------
 
 #MIN_INITRD
+#Clone Ubuntu-specific branch
 min-initrd-dir:
-	git clone git@github.com:unikernelLinux/min-initrd.git
+	git clone --branch ubuntu git@github.com:unikernelLinux/min-initrd.git
 	make all -C min-initrd
 
 #-----------------------------------------------------------------------------
@@ -81,10 +83,10 @@ gcc-build:
 	  --disable-nls --enable-languages=c,c++ --without-headers \
 	  --prefix=/home/tommyu/localInstall/gcc-install/ --with-multilib-list=m64 --disable-multilib
 	make -C $@ all-gcc $(PARALLEL)
-	- make -C $@ all-target-libgcc CFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' $(PARALLEL)
-	- make -C $@ all-target-libgcc CFLAGS_FOR_TARGET='-gggdb -O2 -mno-red-zone -mcmodel=kernel'
+	- make -C $@ all-target-libgcc CFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel -fno-pic -no-pie -nostartfiles' $(PARALLEL)
+	- make -C $@ all-target-libgcc CFLAGS_FOR_TARGET='-gggdb -O2 -mno-red-zone -mcmodel=kernel -fno-pic -no-pie -nostartfiles'
 	sed -i 's/PICFLAG/DISABLED_PICFLAG/g' gcc-build/x86_64-pc-linux-gnu/libgcc/Makefile
-	- make -C $@ all-target-libgcc CFLAGS_FOR_TARGET='-ggdb -O2 -mcmodel=kernel -mno-red-zone'
+	- make -C $@ all-target-libgcc CFLAGS_FOR_TARGET='-ggdb -O2 -mcmodel=kernel -mno-red-zone -fno-pic -no-pie -nostartfiles'
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
