@@ -57,7 +57,7 @@ char *new_output_fn = NULL;
 #define OUTPUT_FN		OUTPUT_FILE_PATH "output_file.csv"
 #define NEW_OUTPUT_FN	OUTPUT_FILE_PATH "new_output_file.csv"
 #define DEBUG false
-#define BASE_ITER 1000
+#define BASE_ITER 40
 
 #define PAGE_SIZE 4096
 
@@ -1101,9 +1101,18 @@ void recv_test(struct timespec *timeArray, int iter, int *i) {
 
 }
 
+char one[] = "0";
+char two[] = "ukl";
+char* myarr[3];
+
 int main(int argc, char *argv[])
 {
 	home = "/";
+
+	myarr[1] = &one;
+	myarr[2] = &two;
+	argc = 3;
+	argv = &myarr;
 	
 	output_fn = (char *)malloc(500*sizeof(char));
 	strcpy(output_fn, home);
@@ -1153,7 +1162,7 @@ int main(int argc, char *argv[])
 	/*****************************************/
 	/*               GETPID                  */
 	/*****************************************/
-
+	/*
 	sleep(1);
 	info.iter = BASE_ITER * 100;
 	info.name = "ref";
@@ -1167,9 +1176,7 @@ int main(int argc, char *argv[])
 	info.iter = BASE_ITER * 100;
 	info.name = "getpid";
 	one_line_test(fp, copy, getpid_test, &info);
-
-
-	
+	*/	
 	/*****************************************/
 	/*            CONTEXT SWITCH             */
 	/*****************************************/
@@ -1178,7 +1185,6 @@ int main(int argc, char *argv[])
 	info.name = "context siwtch";
 	one_line_test(fp, copy, context_switch_test, &info);
 	*/
-
 	/*****************************************/
 	/*             SEND & RECV               */
 	/*****************************************/
@@ -1208,11 +1214,10 @@ int main(int argc, char *argv[])
 	info.name = "big recv";
 	one_line_test_v2(fp, copy, recv_test, &info);
 	*/
-
 	/*****************************************/
 	/*         FORK & THREAD CREATE          */
 	/*****************************************/
-	/*
+	
 	info.iter = BASE_ITER * 2;
 	info.name = "fork";
 	two_line_test(fp, copy, forkTest, &info);
@@ -1250,7 +1255,6 @@ int main(int argc, char *argv[])
 	for (int i = 0; i < page_count; i++) {
 		munmap(pages1[i], PAGE_SIZE);
 	}
-	*/
 
 	/*****************************************/
 	/*     WRITE & READ & MMAP & MUNMAP      */

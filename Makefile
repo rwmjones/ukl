@@ -1,4 +1,4 @@
-.PHONY: lebench mybench_small redis memcached libevent
+.PHONY: lebench mybench_small redis memcached libevent fork_test1 pthread_test1
 
 PARALLEL= -j$(shell nproc)
 
@@ -32,11 +32,41 @@ undefined_sys_hack.o: undefined_sys_hack.c
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 
+#FORK_TEST1
+fork_test1: undefined_sys_hack.o gcc-build glibc-build
+	- rm -rf UKL.a fork_test1.o 
+	gcc -c -o fork_test1.o fork_test1.c $(UKL_FLAGS) 
+	ld -r -o fork_test1.ukl --allow-multiple-definition $(CRT_STARTS) fork_test1.o \
+                --start-group --whole-archive  $(PTHREAD_LIB) \
+                $(C_LIB) --no-whole-archive $(SYS_LIBS) --end-group $(CRT_ENDS)
+	ar cr UKL.a fork_test1.ukl undefined_sys_hack.o
+	objcopy --prefix-symbols=ukl_ UKL.a
+	objcopy --redefine-syms=redef_sym_names UKL.a
+	- rm -rf linux/vmlinux
+
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+
+#PTHREAD_TEST1
+pthread_test1: undefined_sys_hack.o gcc-build glibc-build
+	- rm -rf UKL.a pthread_test1.o 
+	gcc -c -o pthread_test1.o pthread_test1.c $(UKL_FLAGS) 
+	ld -r -o pthread_test1.ukl --allow-multiple-definition $(CRT_STARTS) pthread_test1.o \
+                --start-group --whole-archive  $(PTHREAD_LIB) \
+                $(C_LIB) --no-whole-archive $(SYS_LIBS) --end-group $(CRT_ENDS)
+	ar cr UKL.a pthread_test1.ukl undefined_sys_hack.o
+	objcopy --prefix-symbols=ukl_ UKL.a
+	objcopy --redefine-syms=redef_sym_names UKL.a
+	- rm -rf linux/vmlinux
+
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+
 #MYBENCH_SMALL
 mybench_small: undefined_sys_hack.o gcc-build glibc-build
 	- rm -rf UKL.a mybench_small.o 
 	gcc -c -o mybench_small.o mybench_small.c $(UKL_FLAGS) -UUSE_VMALLOC -UBYPASS -UUSE_MALLOC \
-                -DREF_TEST -DWRITE_TEST -DREAD_TEST -DMMAP_TEST -DMUNMAP_TEST -DPF_TEST -DEPOLL_TEST \
+                -DREF_TEST -UWRITE_TEST -UREAD_TEST -UMMAP_TEST -UMUNMAP_TEST -UPF_TEST -UEPOLL_TEST \
                 -USELECT_TEST -UPOLL_TEST
 	ld -r -o mybench_small.ukl --allow-multiple-definition $(CRT_STARTS) mybench_small.o \
                 --start-group --whole-archive  $(PTHREAD_LIB) \
