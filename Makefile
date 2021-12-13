@@ -3,8 +3,8 @@
 PARALLEL= -j$(shell nproc)
 
 #PATHS
-GCC_LIB=gcc-build/x86_64-pc-linux-gnu/libgcc/
-LC_DIR=glibc-build/
+GCC_LIB=/mnt/ukl/gcc-build/x86_64-pc-linux-gnu/libgcc/
+LC_DIR=/mnt/ukl/glibc-build/
 CRT_LIB=$(LC_DIR)csu/
 C_LIB=$(LC_DIR)libc.a
 PTHREAD_LIB=$(LC_DIR)nptl/libpthread.a
@@ -13,6 +13,7 @@ MATH_LIB=$(LC_DIR)math/libm.a
 CRT_STARTS=$(CRT_LIB)crt1.o $(CRT_LIB)crti.o $(GCC_LIB)crtbeginT.o
 CRT_ENDS=$(GCC_LIB)crtend.o $(CRT_LIB)crtn.o
 SYS_LIBS=$(GCC_LIB)libgcc.a $(GCC_LIB)libgcc_eh.a
+C++_LIB=/mnt/ukl/g++-build/x86_64-pc-linux-gnu/libstdc++-v3/src/.libs/libstdc++.a
 
 LEBench_UKL_FLAGS=-ggdb -mno-red-zone -mcmodel=kernel
 
@@ -57,6 +58,14 @@ fio: fio-3.28 libz.a undefined_sys_hack.o gcc-build glibc-build
 		--no-whole-archive $(SYS_LIBS) --end-group $(CRT_ENDS)
 	mv fio-3.28/fio.ukl .
 	ar cr UKL.a fio.ukl undefined_sys_hack.o
+	objcopy --prefix-symbols=ukl_ UKL.a
+	objcopy --redefine-syms=redef_sym_names UKL.a
+
+cpp-test: test.cc undefined_sys_hack.o gcc-build glibc-build
+	g++ -o test.o -c test.cc -mcmodel=kernel -ggdb -mno-red-zone
+	ld -r -o test.ukl --allow-multiple-definition $(CRT_STARTS) test.o --start-group --whole-archive $(RT_LIB) \
+		$(PTHREAD_LIB) $(MATH_LIB) $(C++_LIB) $(C_LIB) --no-whole-archive $(SYS_LIBS) --end-group $(CRT_ENDS)
+	ar cr UKL.a test.ukl undefined_sys_hack.o
 	objcopy --prefix-symbols=ukl_ UKL.a
 	objcopy --redefine-syms=redef_sym_names UKL.a
 
@@ -116,13 +125,42 @@ gcc-build:
 	- mkdir gcc-install
 	cd $@; \
 	  TARGET=x86_64-elf ../gcc/configure --target=$(TARGET) \
-	  --disable-nls --enable-languages=c,c++ --without-headers \
-	  --prefix=/home/tommyu/localInstall/gcc-install/ --with-multilib-list=m64 --disable-multilib
+	  --disable-nls --enable-languages=c --without-headers \
+	  --prefix=/mnt/ukl/gcc-install/ --with-multilib-list=m64 --disable-multilib
+	mkdir -p /mnt/ukl/gcc-build/./gcc/
+	ln -s /usr/bin/gcc /mnt/ukl/gcc-build/./gcc/xgcc
 	make -C $@ all-gcc $(PARALLEL)
-	- make -C $@ all-target-libgcc CFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' $(PARALLEL)
-	- make -C $@ all-target-libgcc CFLAGS_FOR_TARGET='-gggdb -O2 -mno-red-zone -mcmodel=kernel'
+	- make -C $@ all-target-libgcc GOCFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' CFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' $(PARALLEL)
+	- make -C $@ all-target-libgcc GOCFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' CFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel'
 	sed -i 's/PICFLAG/DISABLED_PICFLAG/g' gcc-build/x86_64-pc-linux-gnu/libgcc/Makefile
-	- make -C $@ all-target-libgcc CFLAGS_FOR_TARGET='-ggdb -O2 -mcmodel=kernel -mno-red-zone'
+	- make -C $@ all-target-libgcc GOCFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' CFLAGS_FOR_TARGET='-ggdb -O2 -mcmodel=kernel -mno-red-zone'
+
+go-build:
+	- mkdir $@
+	- mkdir -p gcc-install
+	cd $@; \
+	  TARGET=x86_64-elf ../gcc/configure --target=$(TARGET) \
+	  --disable-nls --enable-languages=go --without-headers \
+	  --prefix=/mnt/ukl/gcc-install/ --disable-multilib --disable-libgomp
+	- make -C $@ all-target-libgo GOCFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' CFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' $(PARALLEL)
+	mkdir -p /mnt/ukl/go-build/./gcc/
+	- ln -s /usr/bin/gcc /mnt/ukl/go-build/./gcc/xgcc
+	- make -C $@ all-target-libgo GOCFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' CFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' $(PARALLEL)
+	- make -C $@ all-target-libgo GOCFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' CFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel'
+	sed -i 's/PICFLAG/DISABLED_PICFLAG/g' gcc-build/x86_64-pc-linux-gnu/libgcc/Makefile
+	- make -C $@ all-target-libgo GOCFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' CFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel'
+
+g++-build:
+	- mkdir $@
+	- mkdir -p gcc-install
+	cd $@; \
+	  TARGET=x86_64-elf ../gcc/configure --target=$(TARGET) \
+	  --disable-nls --enable-languages=c++,go --without-headers \
+	  --prefix=/mnt/ukl/gcc-install/ --disable-multilib --disable-libgomp
+	- make -C $@ all-target-libstdc++-v3 all-target-libgo CXXFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' CFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' $(PARALLEL)
+	mkdir -p /mnt/ukl/g++-build/./gcc/
+	ln -s /usr/bin/gcc /mnt/ukl/g++-build/./gcc/xgcc
+	- make -C $@ all-target-libstdc++-v3 all-target-libgo CXXFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' CFLAGS_FOR_TARGET='-ggdb -O2 -mno-red-zone -mcmodel=kernel' $(PARALLEL)
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
