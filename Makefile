@@ -41,6 +41,33 @@ new_lebench-dir:
 gapbs-dir:
 	git clone -b ukl git@github.com:unikernelLinux/gapbs.git
 
+libsodium-1.0.18:
+	curl https://download.libsodium.org/libsodium/releases/libsodium-1.0.18.tar.gz --output libsodium-1.0.18.tar.gz
+	tar xf libsodium-1.0.18.tar.gz
+
+libsodium.a: libsodium-1.0.18
+	cd libsodium-1.0.18 && ./configure CFLAGS='-ggdb -O2 -mno-red-zone -mcmodel=kernel' \
+		--enable-static --disable-shared
+	make -C libsodium-1.0.18 $(PARALLEL)
+	cp libsodium-1.0.18/src/libsodium/.libs/libsodium.a .
+
+secrecy: libsodium.a
+	-rm -f secrecy.ukl
+	-rm -f UKL.a
+	cd ec528_secrecy/src && CFLAGS='-ggdb -O3 -mno-red-zone -mcmodel=kernel -std=c99' make \
+		$(PARALLEL) libsecrecy.a
+	cp ec528_secrecy/src/libsecrecy.a .
+	cd ec528_secrecy/experiments && gcc -o ../../exp_group_by.o -c -ggdb -O3 -mno-red-zone \
+		-mcmodel=kernel -std=c99 exp_group_by.c
+	ld -r -o secrecy.ukl --allow-multiple-definition $(CRT_STARTS) \
+		exp_group_by.o --start-group --whole-archive libsecrecy.a libsodium.a \
+		$(RT_LIB) $(PTHREAD_LIB) $(MATH_LIB) $(C_LIB) --no-whole-archive \
+		$(SYS_LIBS) --end-group $(CRT_ENDS)
+	gcc -c -o undefined_sys_hack.o undefined_sys_hack.c -mcmodel=kernel -ggdb -mno-red-zone
+	ar cr UKL.a secrecy.ukl undefined_sys_hack.o
+	objcopy --prefix-symbols=ukl_ UKL.a
+	objcopy --redefine-syms=redef_sym_names UKL.a
+
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------
 
@@ -130,6 +157,12 @@ glibc-build:
 run:
 	make runU -C min-initrd
 
+run1:
+	make runU1 -C min-initrd
+run2:
+	make runU2 -C min-initrd
+run3:
+	make runU3 -C min-initrd
 debug:
 	make debugU -C min-initrd
 

@@ -1,0 +1,8 @@
+// #include "mpi.h"
+#include "../src/primitives.h"
+#include "../src/relational.h"
+#include "../src/baseline.h"
+#include "../src/comm.h"
+#include "../src/mpctypes.h"
+#include "../src/party.h"
+#include "../src/sharing.h"
